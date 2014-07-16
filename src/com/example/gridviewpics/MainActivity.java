@@ -1,65 +1,135 @@
 package com.example.gridviewpics;
 
+import java.io.File;
+
 import android.app.Activity;
 import android.app.ActionBar;
 import android.app.Fragment;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.ThumbnailUtils;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.GridView;
+import android.widget.ImageView;
 import android.os.Build;
 
 public class MainActivity extends Activity {
-
+	String[] fileNames;
+	File path;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        if (savedInstanceState == null) {
-            getFragmentManager().beginTransaction()
-                    .add(R.id.container, new PlaceholderFragment())
-                    .commit();
-        }
-    }
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
         
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
+        String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/SnapDrawShare/";
+        path = new File(dir);
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
+        if(path.isDirectory()) {
+        	//Log.e("File path", "Path is a directory");
+        	fileNames = path.list();
+        	//for(int i =0; i<fileNames.length; i++)
+            //	Log.e("paths",path.getPath()+"/"+ fileNames[i]);
         }
-        return super.onOptionsItemSelected(item);
+        
+        
+      //Create a gird view in activity_main.xml with id of 'gridview'
+        GridView gridView = (GridView) findViewById(R.id.gridview);
+        gridView.setAdapter(new ImageAdapter(this));
+        
+        
+        /*String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/SnapDrawShare/";
+        File path = new File(dir);
+
+        if(path.isDirectory()) {
+        	Log.e("File path", "Path is a directory");
+        	String[] fileNames = path.list();
+        	Log.e("fileName.length", Integer.toString(fileNames.length));
+        	
+        	for(int i=0; i<fileNames.length; i++) {
+        		Log.e("fileName[]", fileNames[i]);
+        	}
+        }
+        else {
+        	//Do something, Toast an error, create a warning
+        	Log.e("fileName[]", "Path DOESNT exist");
+        }
+        */	
+        
+        
+        
+        
     }
+    
+    
+    public class ImageAdapter extends BaseAdapter {
+        private Context mContext;
+        int size = (int) getResources().getDimension(R.dimen.image_size);
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-
-        public PlaceholderFragment() {
+        public ImageAdapter(Context c) {
+            mContext = c;
         }
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            return rootView;
+        public int getCount() {
+            //return mThumbIds.length;
+        	return fileNames.length;
         }
-    }
 
+        public Object getItem(int position) {
+            return fileNames[position];
+        }
+
+        public long getItemId(int position) {
+            return position;
+        }
+
+        // create a new ImageView for each item referenced by the Adapter
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ImageView imageView;
+            if (convertView == null) {  // if it's not recycled, initialize some attributes
+                imageView = new ImageView(mContext);
+                imageView.setLayoutParams(new GridView.LayoutParams(size, size));
+                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                imageView.setPadding(8, 8, 8, 8);
+            } else {
+                imageView = (ImageView) convertView;
+            }
+            
+            //Load in the direcroty and display the images
+            /*String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/SnapDrawShare/";
+            File path = new File(dir);
+
+            if(path.isDirectory()) {
+            	//Log.e("File path", "Path is a directory");
+            	String[] fileNames = path.list();
+            	//Log.e("fileName.length", Integer.toString(fileNames.length));
+            	*/
+            	//for(int i=0; i<fileNames.length; i++) {
+            	//	Log.e("fileName[]", fileNames[i]);
+            	//}
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inSampleSize = 13;
+            //options.inJustDecodeBounds = true;
+            	Bitmap mBitmap = BitmapFactory.decodeFile(path.getPath()+"/"+ fileNames[position],options);
+            	imageView.setImageBitmap(ThumbnailUtils.extractThumbnail(mBitmap, size, size));
+           // }
+            
+            
+            //imageView.setImageResource(mThumbIds[position]);
+            return imageView;
+        }
+    }   
+    
 }
+
+
+
+
