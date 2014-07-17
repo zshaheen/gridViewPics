@@ -7,6 +7,12 @@
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     
+	<uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" >
+    </uses-feature>
+	
+	
     <uses-sdk
         android:minSdkVersion="14"
         android:targetSdkVersion="19" />
@@ -24,6 +30,11 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <data
+                android:mimeType="image/*"
+                android:scheme="android.resource" >
+            </data>
+            
         </activity>
     </application>
 
