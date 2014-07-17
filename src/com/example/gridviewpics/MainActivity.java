@@ -24,6 +24,7 @@ import android.widget.ImageView;
 public class MainActivity extends Activity {
 	String[] fileNames;
 	File path;
+	String prefix;
 	private LruCache<String, Bitmap> mMemoryCache;
 
 	
@@ -42,9 +43,11 @@ public class MainActivity extends Activity {
         	//for(int i =0; i<fileNames.length; i++)
             //	Log.e("paths",path.getPath()+"/"+ fileNames[i]);
         }
+        prefix = path.getPath()+"/";
         
+        //Caching the bitmaps
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-        final int cacheSize = maxMemory / 8;
+        final int cacheSize = maxMemory / 2;//maxMemory / 8;
         mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
             @Override
             protected int sizeOf(String key, Bitmap bitmap) {
@@ -59,24 +62,7 @@ public class MainActivity extends Activity {
         GridView gridView = (GridView) findViewById(R.id.gridview);
         gridView.setAdapter(new ImageAdapter(this));
         
-        
-        /*String dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/SnapDrawShare/";
-        File path = new File(dir);
 
-        if(path.isDirectory()) {
-        	Log.e("File path", "Path is a directory");
-        	String[] fileNames = path.list();
-        	Log.e("fileName.length", Integer.toString(fileNames.length));
-        	
-        	for(int i=0; i<fileNames.length; i++) {
-        		Log.e("fileName[]", fileNames[i]);
-        	}
-        }
-        else {
-        	//Do something, Toast an error, create a warning
-        	Log.e("fileName[]", "Path DOESNT exist");
-        }
-        */
         
     }
     
@@ -99,6 +85,8 @@ public class MainActivity extends Activity {
     	
         // Calculate inSampleSize
         options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+        Log.e("calculateInSampleSize", Integer.toString(options.inSampleSize));
+        //options.inSampleSize = 6;
     	//options.inSampleSize = 128;
     	
         // Decode bitmap with inSampleSize set
@@ -111,36 +99,29 @@ public class MainActivity extends Activity {
     public int calculateInSampleSize(
 	            BitmapFactory.Options options, int reqWidth, int reqHeight) {
 	    // Raw height and width of image
-	    final int height = options.outHeight;
-	    final int width = options.outWidth;
-	    int inSampleSize = 1;
-	
-	    if (height > reqHeight || width > reqWidth) {
-	
-	        final int halfHeight = height / 2;
-	        final int halfWidth = width / 2;
-	
-	        // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-	        // height and width larger than the requested height and width.
-	        while ((halfHeight / inSampleSize) > reqHeight
-	                && (halfWidth / inSampleSize) > reqWidth) {
-	            inSampleSize *= 2;
-	        }
-	    }
-	
-	    return inSampleSize;
+
+    	final int height = options.outHeight;
+        final int width = options.outWidth;
+
+        int stretch_width = Math.round((float)width / (float)reqWidth);
+        int stretch_height = Math.round((float)height / (float)reqHeight);
+
+        if (stretch_width <= stretch_height) 
+            return stretch_height;
+        else 
+            return stretch_width;
 	}
     
     public class ImageAdapter extends BaseAdapter {
         private Context mContext;
-        int size = (int) getResources().getDimension(R.dimen.image_size);
-        Bitmap bitmap = null;
-        Bitmap loadingBitmap = null;
+        private int size = (int) getResources().getDimension(R.dimen.image_size);
+        //Bitmap bitmap = null;
+        private Bitmap loadingBitmap = null;
 
         public ImageAdapter(Context c) {
             mContext = c;
             //Set loadingBitmap
-            loadingBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+            loadingBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.transparent);
         }
 
         public int getCount() {
@@ -153,7 +134,7 @@ public class MainActivity extends Activity {
         }
 
         public long getItemId(int position) {
-            return position;
+            return 0;
         }
         
         
@@ -175,7 +156,7 @@ public class MainActivity extends Activity {
 			Bitmap mBitmap = BitmapFactory.decodeFile(path.getPath()+"/"+ fileNames[position],options);
 			imageView.setImageBitmap(mBitmap);
             */
-
+            /////////////////////Log.e("position", Integer.toString(position));
             
             
             //attemps to load a bitmap with key of the filename
@@ -193,7 +174,7 @@ public class MainActivity extends Activity {
             
             //imageView.setImageBitmap();
             //imageView.setImageResource(R.drawable.ic_launcher );
-            loadBitmap(path.getPath()+"/"+ fileNames[position], imageView, loadingBitmap );
+            loadBitmap(fileNames[position], imageView, loadingBitmap, position );
             //imageView.setImageBitmap(decodeSampledBitmapFromFile(path.getPath()+"/"+ fileNames[position],size,size));
 
             return imageView;
@@ -229,31 +210,51 @@ public class MainActivity extends Activity {
     	    	  // Log.e("error", "drwawable is null");
     	       
     	       if (drawable instanceof AsyncDrawable) {
-    	    	   Log.e("Shit","Drawable is of type AsyncDrawable");
+    	    	  // Log.e("Shit","Drawable is of type AsyncDrawable");
     	           final AsyncDrawable asyncDrawable = (AsyncDrawable) drawable;
     	           return asyncDrawable.getBitmapWorkerTask();
     	       }
     	    }
-    	   Log.e("error", "getBitmapWorkerTask returns null");
+    	   //Log.e("error", "getBitmapWorkerTask returns null");
     	    return null;
     	}
     
-    public void loadBitmap(String filename, ImageView imageView, Bitmap loadingImage) {
-    	if (cancelPotentialWork(filename, imageView)) {
+    public void loadBitmap(String filename, ImageView imageView, Bitmap loadingImage, int position) {
+    	//Log.e("loadBitmap filename", filename);
+    	//Log.e("loadBitmap position", Integer.toString(position));
+    	//Log.e("loadBitmap position", Integer.toString(position));
+    	final Bitmap bitmap = getBitmapFromMemCache(filename);
+    	if (bitmap != null) {
+    		Log.e("cache",  filename+" FROM cache");
+    		imageView.setImageBitmap(bitmap);
+    	} else {
+    		Log.e("cache",  filename+" FROM dissssskkkkkkkk");
+    		if (cancelPotentialWork(filename, imageView)) {
+	    		BitmapWorkerTask task = new BitmapWorkerTask(imageView);
+	    		final AsyncDrawable asyncDrawable =
+	                    new AsyncDrawable(getResources(), loadingImage, task);
+	    		imageView.setImageDrawable(asyncDrawable);
+	            //task.execute(prefix+filename);
+	    		task.execute(filename, position);
+    		}
+    		
+    	}
+    	
+    	/*if (cancelPotentialWork(filename, imageView)) {
             final BitmapWorkerTask task = new BitmapWorkerTask(imageView);
-            //Dont need code below because I'm not placing the temp image in the imageview.
-            //The temp image is the default image shown before something is loaded.
             final AsyncDrawable asyncDrawable =
                     new AsyncDrawable(getResources(), loadingImage, task);
             imageView.setImageDrawable(asyncDrawable);
-            task.execute(filename);
-    	}
+            task.execute(prefix+filename);
+    	}*/
     }
     
-    public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
+    public class BitmapWorkerTask extends AsyncTask<Object, Void, Bitmap> {
         private final WeakReference<ImageView> imageViewReference;
         private String filename;
+        private int position;
         int size = (int) getResources().getDimension(R.dimen.image_size);
+        
         
         public BitmapWorkerTask(ImageView imageView) {
             // Use a WeakReference to ensure the ImageView can be garbage collected
@@ -262,9 +263,14 @@ public class MainActivity extends Activity {
 
         // Decode image in background.
         @Override
-        protected Bitmap doInBackground(String... params) {
-        	filename = params[0];
-            return decodeSampledBitmapFromFile(filename, size, size);
+        protected Bitmap doInBackground(Object... params) {
+        	filename = (String)params[0];
+        	position = (Integer)params[1];
+        	final Bitmap bitmap = decodeSampledBitmapFromFile(prefix+filename, size, size);
+        	///////////////Log.e("doInBackground filename", filename+" from disk");
+        	//addBitmapToMemoryCache(filename, bitmap);
+        	addBitmapToMemoryCache(filename, bitmap);
+        	return bitmap;
         }
 
         // Once complete, see if ImageView is still around and set bitmap.
