@@ -135,9 +135,12 @@ public class MainActivity extends Activity {
         private Context mContext;
         int size = (int) getResources().getDimension(R.dimen.image_size);
         Bitmap bitmap = null;
+        Bitmap loadingBitmap = null;
 
         public ImageAdapter(Context c) {
             mContext = c;
+            //Set loadingBitmap
+            loadingBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
         }
 
         public int getCount() {
@@ -189,7 +192,8 @@ public class MainActivity extends Activity {
             }*/
             
             //imageView.setImageBitmap();
-            loadBitmap(path.getPath()+"/"+ fileNames[position], imageView );
+            //imageView.setImageResource(R.drawable.ic_launcher );
+            loadBitmap(path.getPath()+"/"+ fileNames[position], imageView, loadingBitmap );
             //imageView.setImageBitmap(decodeSampledBitmapFromFile(path.getPath()+"/"+ fileNames[position],size,size));
 
             return imageView;
@@ -234,16 +238,16 @@ public class MainActivity extends Activity {
     	    return null;
     	}
     
-    public void loadBitmap(String filename, ImageView imageView) {
-    	/////////////////////////////////if (cancelPotentialWork(filename, imageView)) {
+    public void loadBitmap(String filename, ImageView imageView, Bitmap loadingImage) {
+    	if (cancelPotentialWork(filename, imageView)) {
             final BitmapWorkerTask task = new BitmapWorkerTask(imageView);
             //Dont need code below because I'm not placing the temp image in the imageview.
             //The temp image is the default image shown before something is loaded.
-            //final AsyncDrawable asyncDrawable =
-                    //new AsyncDrawable(getResources(), mPlaceHolderBitmap, task);
-            //imageView.setImageDrawable(asyncDrawable);
+            final AsyncDrawable asyncDrawable =
+                    new AsyncDrawable(getResources(), loadingImage, task);
+            imageView.setImageDrawable(asyncDrawable);
             task.execute(filename);
-/////////////////////////////////}
+    	}
     }
     
     public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
@@ -278,10 +282,10 @@ public class MainActivity extends Activity {
                 
                 //Log.e("bitmapWorkerTask", bitmapWorkerTask.filename);
                 //Log.e("bitmapWorkerTask", Integer.toString(bitmapWorkerTask.size));
-                
+                //imageView.setImageResource(R.drawable.ic_launcher );
                 	//Log.e("Stuff", "this == bitmapWorkerTask");
                 //Log.e("Stuff", "this == bitmapWorkerTask");
-                if (/*this == bitmapWorkerTask &&*/ imageView != null) {
+                if (this == bitmapWorkerTask && imageView != null) {
                     imageView.setImageBitmap(bitmap);
                 }
             }
